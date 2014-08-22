@@ -1,3 +1,4 @@
-v0.0.3, 08-21-2014 -- Added printobject() ..needed some more functionality :)
-v0.0.2, 08-21-2014 -- Small package fix.
-v0.0.1, 08-21-2014 -- Initial release.
+v0.0.4, 08/21/2014 -- Switching README format using pypandoc.
+v0.0.3, 08/21/2014 -- Added printobject() ..needed some more functionality :)
+v0.0.2, 08/21/2014 -- Small package fix.
+v0.0.1, 08/21/2014 -- Initial release.

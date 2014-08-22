@@ -8,22 +8,28 @@ from __future__ import print_function
 from distutils.core import setup
 
 # Convert github markdown to Pypi rst.
-import pypandoc
+defaultdesc = 'Small debug printing module.'
 try:
-    longdesc = pypandoc.convert('README.md', 'rst')
-except EnvironmentError:
-    # Fallback to manually converted README.txt (may be behind on updates)
+    import pypandoc
+except ImportError:
+    print('Pypandoc not installed, falling back to default description.')
+    longdesc = defaultdesc
+else:
     try:
-        with open('README.txt') as f:
-            longdesc = f.read()
+        longdesc = pypandoc.convert('README.md', 'rst')
     except EnvironmentError:
-        # Something is horribly wrong.
-        print('Error reading README.md and fallback README.txt!')
-        longdesc = 'Small debug printing module.'
+        # Fallback to manually converted README.txt (may be behind on updates)
+        try:
+            with open('README.txt') as f:
+                longdesc = f.read()
+        except EnvironmentError:
+            # Something is horribly wrong.
+            print('Error reading README.md and fallback README.txt!')
+            longdesc = defaultdesc
 
 setup(
     name='PrintDebug',
-    version='0.0.3',
+    version='0.0.4',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['printdebug'],
