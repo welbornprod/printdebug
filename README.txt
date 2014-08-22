@@ -10,6 +10,8 @@ More useful stuff may be added in the future.
 Example Usage:
 --------------
 
+::
+
     from printdebug import printdebug, printobject
     def myfunction():
         printdebug('Hello from myfunction.')
@@ -28,6 +30,4 @@ Example Usage:
     #            value1
     #        subkey2:
     #            value2
-
-
 
