@@ -4,12 +4,15 @@
     -Christopher Welborn 08-21-2014
 """
 import sys
-from __init__ import printdebug
+from __init__ import printdebug, printobject
 
 
 def main():
     printdebug('Hello from main().')
     another_func()
+    o = {'test': {'child': {'subchild': [1, 2, 3]}, 'child2': ('a', 1, None)}}
+    print('Testing printobject({!r}):'.format(o))
+    printobject(o)
     return 0
 
 

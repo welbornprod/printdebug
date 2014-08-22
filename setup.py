@@ -9,7 +9,7 @@ from distutils.core import setup
 
 setup(
     name='PrintDebug',
-    version='0.0.2',
+    version='0.0.3',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['printdebug'],

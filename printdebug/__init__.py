@@ -6,7 +6,7 @@ from __future__ import print_function
 from collections import namedtuple
 import inspect
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 # Holds information about where the debug print came from.
 LineInfo = namedtuple('LineInfo', ['filename', 'name', 'lineno'])
@@ -61,3 +61,43 @@ def printdebug(*args, **kwargs):
     # New debug formatted line.
     debugstr = ' '.join((str(lineinfo), ' '.join(args)))
     print(debugstr, **kwargs)
+
+
+def printobject(obj, indent=0):
+    """ Print a verbose representation of an object.
+        The format depends on what kind of object it is.
+        Tuples, Lists, and Dicts are recursively formatted according to the
+        other rules below.
+        Strings will be printed as is.
+        Any other type will be printed using str() (Actually '{}'.format(obj))
+    """
+    if isinstance(obj, dict):
+        try:
+            objkeys = sorted(obj.keys())
+        except TypeError:
+            # Mixed key types.
+            objkeys = obj.keys()
+
+        for k in objkeys:
+            v = obj[k]
+            print('{}{}:'.format(' ' * indent, k))
+            if isinstance(v, dict):
+                printobject(v, indent=indent + 4)
+            elif isinstance(v, (list, tuple)):
+                printobject(v, indent=indent + 4)
+            else:
+                print('{}{}'.format(' ' * (indent + 4), v))
+    elif isinstance(obj, (list, tuple)):
+        try:
+            objitems = sorted(obj)
+        except TypeError:
+            # Mixed list/tuple
+            objitems = obj
+
+        for itm in objitems:
+            if isinstance(itm, (list, tuple)):
+                printobject(itm, indent=indent + 4)
+            else:
+                print('{}{}'.format(' ' * indent, itm))
+    else:
+        print('{}{}'.format(' ' * indent, obj))
