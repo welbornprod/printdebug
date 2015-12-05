@@ -17,7 +17,7 @@ except ImportError:
 else:
     try:
         longdesc = pypandoc.convert('README.md', 'rst')
-    except EnvironmentError:
+    except (RuntimeError, EnvironmentError):
         # Fallback to manually converted README.txt (may be behind on updates)
         try:
             with open('README.txt') as f:
@@ -29,7 +29,7 @@ else:
 
 setup(
     name='PrintDebug',
-    version='0.0.4',
+    version='0.0.5-1',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['printdebug'],
