@@ -10,14 +10,15 @@ More useful stuff may be added in the future.
 Example Usage:
 --------------
 
-    from printdebug import printdebug, printobject
+```python
+    from printdebug import debug, printobject
     def myfunction():
-        printdebug('Hello from myfunction.')
+        debug('Hello from myfunction.', basename=True)
 
     myfunction()
 
     # Output:
-    #   myfile.py line #3 in myfunction: Hello from myfunction.
+    #   myfile.py:3 myfunction: Hello from myfunction.
 
     o = {'key1': {'subkey1': 'value1', 'subkey2': 'value2'}}
     printobject(o)
@@ -28,6 +29,6 @@ Example Usage:
     #            value1
     #        subkey2:
     #            value2
-
+```
 
 

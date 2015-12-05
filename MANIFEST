@@ -3,8 +3,8 @@ CHANGES.txt
 DESC.txt
 LICENSE.txt
 README.md
-README.txt
 setup.py
+docs/README.txt
 docs/gpl.txt
 printdebug/__init__.py
 printdebug/__main__.py

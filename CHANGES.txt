@@ -1,3 +1,4 @@
+v0.1.0 12/04/15 -- Format/config options, DebugPrinter() and clean up.
 v0.0.5-1, 09/21/2014 -- Fixed install bug.
 v0.0.5, 09/21/2014 -- Added optional file-object arg.
 v0.0.4, 08/21/2014 -- Switching README format using pypandoc.

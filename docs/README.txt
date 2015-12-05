@@ -10,24 +10,24 @@ More useful stuff may be added in the future.
 Example Usage:
 --------------
 
-::
+.. code:: python
 
-    from printdebug import printdebug, printobject
-    def myfunction():
-        printdebug('Hello from myfunction.')
+        from printdebug import debug, printobject
+        def myfunction():
+            debug('Hello from myfunction.', basename=True)
 
-    myfunction()
+        myfunction()
 
-    # Output:
-    #   myfile.py line #3 in myfunction: Hello from myfunction.
+        # Output:
+        #   myfile.py:3 myfunction: Hello from myfunction.
 
-    o = {'key1': {'subkey1': 'value1', 'subkey2': 'value2'}}
-    printobject(o)
+        o = {'key1': {'subkey1': 'value1', 'subkey2': 'value2'}}
+        printobject(o)
 
-    # Output:
-    #    key1:
-    #        subkey1:
-    #            value1
-    #        subkey2:
-    #            value2
+        # Output:
+        #    key1:
+        #        subkey1:
+        #            value1
+        #        subkey2:
+        #            value2
 
