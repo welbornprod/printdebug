@@ -29,12 +29,14 @@ myfunction()
 
 The default format for line information is `'{filename}:{lineno} {name}(): '`,
 but can be set with the `fmt` arg:
-```
+
+```python
 debug('Test', fmt='#{lineno} in function {name}, file: {filename}')
 ```
 
 The format can be set once, and used every time with a `DebugPrinter` instance, or by overriding `printdebug.default_format`:
-```
+
+```python
 from printdebug import DebugPrinter
 
 dp = DebugPrinter(fmt='{filename}: {name}():#{lineno}')
