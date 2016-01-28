@@ -10,12 +10,11 @@ import os.path
 import sys
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 __all__ = [
     'DebugPrinter',
     'debug',
-    'debug_disable',
     'debug_enable',
     'printdebug',
     'printobject',
@@ -42,13 +41,6 @@ LineInfo.__str__ = LineInfo__str__
 # Module-level flag to disable debug() and DebugPrinter().debug().
 # Better called through debug_enable(True/False)
 _enabled = True
-
-
-def _dummy(*args, **kwargs):
-    """ A no-op function to replace the debug() function when debug_disable()
-        is called.
-    """
-    return None
 
 
 def debug_enable(enabled=True):
@@ -160,7 +152,8 @@ def printobject(obj, file=None, indent=0):
         Arguments:
             obj    : Object to print.
             file     : Open file object, defaults to sys.stdout.
-            indent : Internal use. Can be used to set initial indention though.
+            indent : Internal use.
+                     Can be used to set initial indention though.
                      Must be an integer. Default: 0
     """
     if file is None:
@@ -290,5 +283,4 @@ class suppress:
 
 
 # Save an alias to the debug function for backwards compatibility,
-# and another for enabling/disabling.
-printdebug = _old_debug = debug
+printdebug = debug
