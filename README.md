@@ -15,19 +15,19 @@ Example Usage:
 ```python
 from printdebug import debug
 def myfunction():
-    debug('Hello from myfunction.', basename=True)
+    debug('Hello from myfunction.')
 
 myfunction()
 ```
 
 ####  Output:
 ```
-   myfile.py:3 myfunction: Hello from myfunction.
+   myfile.py:    3                 myfunction(): Hello from myfunction.
 ```
 
 ### Formatting:
 
-The default format for line information is `'{filename}:{lineno} {name}(): '`,
+The default format for line information is `'{filename}:{lineno:>5} {name:>25}(): '`,
 but can be set with the `fmt` arg:
 
 ```python
@@ -42,6 +42,18 @@ from printdebug import DebugPrinter
 dp = DebugPrinter(fmt='{filename}: {name}():#{lineno}')
 dp.debug('Test')
 ```
+
+There is a default colorized format, using the [`colr`](https://github.com/welbornprod/colr) module.
+
+```python
+from printdebug import DebugColrPrinter
+dp = DebugColrPrinter()
+dp.debug('Test')
+```
+
+#### Output:
+
+![printdebug.DebugColrPrinter](https://welbornprod.com/dl/static/media/img/printdebug-debugcolrprinter.png)
 
 ### Print an object:
 
