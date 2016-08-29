@@ -18,7 +18,7 @@ try:
 except ImportError:
     C = None
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 __all__ = [
     'DebugPrinter',
@@ -106,19 +106,25 @@ def debug(*args, **kwargs):
         Keyword Arguments:
             same as print()
             ..also:
-                parent       : Parent class to include name for methods.
-                level        : Number of frames to go back.
-                               Default: 1
+                align        : Omit the line info but use it's width as
+                               indention.
                 back         : Alias for `level`, will be deprecated soon.
-                fmt          : .format() string for line info.
-                               Default: '{filename}:{lineno} {name}(): '
-                ljustwidth   : str.ljust() value for line info.
-                               Default: 40
                 basename     : Whether to use just the base name of the file.
                                Default: False
+                fmt          : .format() string for line info.
+                               Default: printdebug.default_format
+                level        : Number of frames to go back.
+                               Default: 1
+                ljustwidth   : str.ljust() value for line info.
+                               Default: 40
+                parent       : Parent class to include name for methods.
     """
     if not (_enabled and args):
         return None
+
+    # Use stderr by default.
+    if kwargs.get('file', None) is None:
+        kwargs['file'] = sys.stderr
 
     # Include parent class name when given.
     parent = pop_or(kwargs, 'parent')
@@ -132,6 +138,9 @@ def debug(*args, **kwargs):
     # Get ljust level.
     ljustwidth = pop_or(kwargs, 'ljustwidth', 40)
 
+    # Are we omitting the line info, and just aligning with the end of it?
+    align = pop_or(kwargs, 'align', False)
+
     info = get_lineinfo(level=backlevel)
     usebasename = pop_or(kwargs, 'basename', True)
     fname = os.path.split(info.filename)[-1] if usebasename else info.filename
@@ -143,13 +152,30 @@ def debug(*args, **kwargs):
 
     # Patch args to stay compatible with print().
     pargs = list(args)
-    infostr = fmt.format(
+    lineinfo = fmt.format(
         filename=fname,
         lineno=info.lineno,
         name=func).ljust(ljustwidth)
+
+    # Is this a continuation from a previous line?
+    # Getting this for debug(), re-setting for print().
+    kwargs['end'] = kwargs.get('end', '\n')
+    willcontinue = (not kwargs['end'].endswith('\n'))
+    continued = debug.continued.get(kwargs['file'], False)
+    if align or continued:
+        debug.continued[kwargs['file']] = willcontinue
+        if align:
+            pargs[0] = ''.join((' ' * len(lineinfo), pargs[0]))
+        print(*pargs, **kwargs)
+        return None
+    debug.continued[kwargs['file']] = willcontinue
+
     text = kwargs.get('sep', ' ').join((str(s) for s in pargs))
-    line = ''.join((str(infostr), text))
+    line = ''.join((str(lineinfo), text))
     print(line, **kwargs)
+# This dict keeps track of whether a line is "continued", based on the last
+# `end` parameter, and it does so for each file descriptor used.
+debug.continued = {sys.stderr: False}
 
 
 def pop_or(dct, key, default=None):
@@ -218,15 +244,23 @@ class DebugPrinter(object):
         and uses it until changed.
     """
 
-    def __init__(self, fmt=None, ljustwidth=40, basename=True):
+    def __init__(self, fmt=None, ljustwidth=40, basename=True, file=None):
         self.fmt = fmt or default_format
         self.ljustwidth = ljustwidth
         self.basename = basename
+        # Use stderr by default.
+        self.file = file or sys.stderr
+        # Keeps track of line continuations, per file descriptor.
+        self.continued = {self.file: False}
 
     def debug(self, *args, **kwargs):
         """ Wrapper for print() that adds file, line, and func info. """
         if not (_enabled and args):
             return None
+        # Use stderr by default.
+        if kwargs.get('file', None) is None:
+            kwargs['file'] = self.file
+
         # Include parent class name when given.
         parent = kwargs.get('parent', None)
 
@@ -246,7 +280,7 @@ class DebugPrinter(object):
 
         # Patch args to stay compatible with print().
         pargs = list(args)
-        infostr = self.fmt.format(
+        lineinfo = self.fmt.format(
             filename=fname,
             lineno=info.lineno,
             name=func).ljust(self.ljustwidth)
@@ -254,8 +288,22 @@ class DebugPrinter(object):
             kwargs.get('sep', ' ').join((str(s) for s in pargs))
         ))
 
-        # infostr may be a Colr instance.
-        line = ''.join((str(infostr), text))
+        align = pop_or(kwargs, 'align', False)
+        # Is this a continuation from a previous line?
+        # Getting this for debug(), re-setting for print().
+        kwargs['end'] = kwargs.get('end', '\n')
+        willcontinue = (not kwargs['end'].endswith('\n'))
+        continued = self.continued.get(kwargs['file'], False)
+        if align or continued:
+            self.continued[kwargs['file']] = willcontinue
+            if align:
+                text = ''.join((' ' * self.lineinfo_len(lineinfo), text))
+            print(text, **kwargs)
+            return None
+        self.continued[kwargs['file']] = willcontinue
+
+        # lineinfo may be a Colr instance.
+        line = ''.join((str(lineinfo), text))
 
         # Pop all kwargs for this function. Send the rest to print().
         with suppress(KeyError):
@@ -266,6 +314,12 @@ class DebugPrinter(object):
             kwargs.pop('parent')
 
         print(line, **kwargs)
+
+    def lineinfo_len(self, s):
+        """ Overridable, returns the length of line info.
+            This is needed in subclasses because of escape codes.
+        """
+        return len(s)
 
     def transform_text(self, text):
         """ Run a transformation on the actual text before printing. """
@@ -293,6 +347,12 @@ class DebugColrPrinter(DebugPrinter):
             ljustwidth=ljustwidth,
             basename=basename,
         )
+
+    def lineinfo_len(self, s):
+        """ Return a line length, without escape codes. """
+        if hasattr(s, 'stripped'):
+            return len(s.stripped())
+        return len(s)
 
     def transform_text(self, text):
         """ Transform all debug text, colorizing it. """

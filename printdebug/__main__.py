@@ -5,12 +5,12 @@
 """
 import sys
 import printdebug as pd
-from printdebug import get_lineinfo, printdebug
+from printdebug import __version__, get_lineinfo, debug
 
 
 def main():
     pd.debug('Hello from main().')
-    printdebug('The old functions still work.')
+    debug('The old functions still work.')
     return run_tests(
         another_func_test,
         debugprinter_test,
@@ -18,7 +18,26 @@ def main():
         lineinfo_str_test,
         color_format_test,
         level_test,
+        continued_test,
+        align_test,
     )
+
+
+def align_test():
+    """ debug(align=True) should align content without the lineinfo. """
+    debug('Next line will be aligned with this one.')
+    debug('...so is it?', align=True)
+    dp = pd.DebugPrinter()
+    dp.debug('DebugPrinter, next line will be aligned.')
+    dp.debug('...is it aligned?', align=True)
+
+    try:
+        cp = pd.DebugColrPrinter()
+    except ImportError:
+        return 0
+    cp.debug('DebugColrPrinter, next line will be aligned.')
+    cp.debug('...was it aligned?', align=True)
+    return 0
 
 
 def another_func_test():
@@ -52,6 +71,32 @@ def color_format_test():
     return 0
 
 
+def continued_test():
+    """ Check auto-line-continuation. """
+    # Intermingling these on purpose.
+    debug('Starting on stderr', end='')
+    debug('Starting on stdout', end='', file=sys.stdout)
+    debug(', and continuing.')
+    debug(', and continuing on stdout.', file=sys.stdout)
+    debug('A separate stderr line.')
+    debug('A separate stdout line.', file=sys.stdout)
+    dp = pd.DebugPrinter()
+    dp.debug('DebugPrinter, starting on stderr', end='')
+    dp.debug('DebugPrinter, starting on stdout', end='', file=sys.stdout)
+    dp.debug(', and continuing.')
+    dp.debug(', and continuing.', file=sys.stdout)
+    try:
+        cp = pd.DebugColrPrinter()
+    except ImportError:
+        return 0
+    cp.debug('DebugColrPrinter, starting on stderr', end='')
+    cp.debug('DebugColrrinter, starting on stdout', end='', file=sys.stdout)
+    cp.debug(', and continuing.')
+    cp.debug(', and continuing.', file=sys.stdout)
+
+    return 0
+
+
 def debugprinter_test():
     """ Debug printer uses it's config to format the line info. """
     dp = pd.DebugPrinter(
@@ -79,15 +124,22 @@ def disable_test():
 
 def level_test():
     """ Walk backwards through the frame levels. """
+    try:
+        dp = pd.DebugColrPrinter()
+    except ImportError as ex:
+        # If this is because colr is not installed, ignore it.
+        if ex.name != 'colr':
+            raise
+        dp = pd.DebugPrinter()
+
     def sub_function():
         def subsub_function():
-            cp = pd.DebugColrPrinter()
             for i in range(0, 10):
                 try:
                     info = get_lineinfo(level=i)
                 except ValueError:
                     break
-                cp.debug(''.join((' ' * (10 - i), info.name)))
+                dp.debug(''.join((' ' * (10 - i), info.name)))
         subsub_function()
     sub_function()
     return 0
@@ -118,4 +170,8 @@ def run_tests(*funcs):
 
 
 if __name__ == '__main__':
+    if ('-v' in sys.argv) or ('--version' in sys.argv):
+        print('printdebug v. {}'.format(__version__))
+        sys.exit(0)
+
     sys.exit(main())
