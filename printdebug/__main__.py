@@ -5,7 +5,7 @@
 """
 import sys
 import printdebug as pd
-from printdebug import printdebug
+from printdebug import get_lineinfo, printdebug
 
 
 def main():
@@ -17,11 +17,13 @@ def main():
         disable_test,
         lineinfo_str_test,
         color_format_test,
+        level_test,
     )
 
 
 def another_func_test():
-    """ Function names are reported correctly, even when nested in another. """
+    """ Function names are reported correctly, even when nested in another.
+    """
     def a_nested_func_test():
         pd.debug('Hello from a nested function.')
         pd.debug('Should show from another_func_test.', level=2)
@@ -36,22 +38,17 @@ def another_func_test():
 def color_format_test():
     """ Try using the fmt argument to add colors using the colr module. """
     try:
-        from colr import Colr as C
+        cp = pd.DebugColrPrinter(basename=True)
     except ImportError as ex:
-        print('Unable to test color formatting, no colr module:\n{}'.format(
-            ex))
+        print(
+            'Unable to test color formatting, no colr module:\n{}'.format(ex)
+        )
         return 1
+    cp.debug('Testing DebugColrPrinter.')
 
-    colrfmt = str(C('').join(
-        C('{filename} ', 'blue'),
-        C('#{lineno} ', 'cyan'),
-        C('in '),
-        C('{name}', 'magenta'),
-        C(':'),
-        C(' ', 'green')))
-    pd.debug('Testing colors.', fmt=colrfmt)
-    dp = pd.DebugPrinter(fmt=colrfmt, basename=True)
-    dp.debug('Testing colors from DebugPrinter.')
+    def sub_function():
+        cp.debug('using the default ljustwidth.')
+    sub_function()
     return 0
 
 
@@ -60,7 +57,7 @@ def debugprinter_test():
     dp = pd.DebugPrinter(
         fmt='{filename}.{lineno}>{name}: ',
         ljustwidth=60,
-        basename=True)
+        basename=False)
     dp.debug('Testing DebugPrinter with ljustwidth = 60.')
     return 0
 
@@ -77,6 +74,22 @@ def disable_test():
     pd.DebugPrinter().debug('DebugPrinter should not print this.')
     pd.debug_enable()
     pd.debug('Debug re-enabled.')
+    return 0
+
+
+def level_test():
+    """ Walk backwards through the frame levels. """
+    def sub_function():
+        def subsub_function():
+            cp = pd.DebugColrPrinter()
+            for i in range(0, 10):
+                try:
+                    info = get_lineinfo(level=i)
+                except ValueError:
+                    break
+                cp.debug(''.join((' ' * (10 - i), info.name)))
+        subsub_function()
+    sub_function()
     return 0
 
 

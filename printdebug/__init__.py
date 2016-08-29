@@ -9,8 +9,16 @@ import inspect
 import os.path
 import sys
 
+try:
+    from colr import (
+        auto_disable as colr_auto_disable,
+        Colr as C,
+    )
+    colr_auto_disable()
+except ImportError:
+    C = None
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 
 __all__ = [
     'DebugPrinter',
@@ -24,7 +32,16 @@ __all__ = [
 # Holds information about where the debug print came from.
 LineInfo = namedtuple('LineInfo', ['filename', 'name', 'lineno'])
 
-default_format = '{filename}:{lineno} {name}(): '
+default_format = '{filename}:{lineno:>5} {name:>25}(): '
+if C is None:
+    default_colr_format = None
+else:
+    default_colr_format = C('').join(
+        C('{filename}:', fore='yellow'),
+        C('{lineno:>5} ', fore='blue'),
+        C('{name:>25}', fore='magenta'),
+        C('(): '),
+    )
 
 
 def LineInfo__str__(self):
@@ -65,8 +82,12 @@ def get_lineinfo(level=0):
     frame = inspect.currentframe()
     # Go back some number of frames if needed.
     while level > -1:
+        if frame is None:
+            raise ValueError('`level` is too large, there is no frame.')
         frame = frame.f_back
         level -= 1
+    if frame is None:
+        raise ValueError('`level` is too large, there is no frame.')
 
     return LineInfo(
         frame.f_code.co_filename,
@@ -76,6 +97,9 @@ def get_lineinfo(level=0):
 
 def debug(*args, **kwargs):
     """ Wrapper for print() that adds file, line, and func info.
+        Possibly raises a ValueError if the `level` argument is too large,
+        and there is no frame at the desired level.
+
         Arguments:
             same as print()
 
@@ -100,13 +124,7 @@ def debug(*args, **kwargs):
     parent = pop_or(kwargs, 'parent')
 
     # Go back more than once when given.
-    backlevel = pop_or(kwargs, 'back')
-    if backlevel is None:
-        # Use the new kwarg 'level'.
-        backlevel = pop_or(kwargs, 'level', 1)
-    else:
-        warn(DeprecationWarning(
-            'The `back` argument will be deprecated soon.'))
+    backlevel = pop_or(kwargs, 'level', 1)
 
     # Get format string.
     fmt = pop_or(kwargs, 'fmt', default_format)
@@ -115,7 +133,7 @@ def debug(*args, **kwargs):
     ljustwidth = pop_or(kwargs, 'ljustwidth', 40)
 
     info = get_lineinfo(level=backlevel)
-    usebasename = pop_or(kwargs, 'basename', False)
+    usebasename = pop_or(kwargs, 'basename', True)
     fname = os.path.split(info.filename)[-1] if usebasename else info.filename
 
     if parent:
@@ -129,9 +147,9 @@ def debug(*args, **kwargs):
         filename=fname,
         lineno=info.lineno,
         name=func).ljust(ljustwidth)
-    pargs[0] = ''.join((infostr, str(pargs[0])))
-
-    print(*pargs, **kwargs)
+    text = kwargs.get('sep', ' ').join((str(s) for s in pargs))
+    line = ''.join((str(infostr), text))
+    print(line, **kwargs)
 
 
 def pop_or(dct, key, default=None):
@@ -200,7 +218,7 @@ class DebugPrinter(object):
         and uses it until changed.
     """
 
-    def __init__(self, fmt=None, ljustwidth=40, basename=False):
+    def __init__(self, fmt=None, ljustwidth=40, basename=True):
         self.fmt = fmt or default_format
         self.ljustwidth = ljustwidth
         self.basename = basename
@@ -213,13 +231,8 @@ class DebugPrinter(object):
         parent = kwargs.get('parent', None)
 
         # Go back more than once when given.
-        backlevel = kwargs.get('back', None)
-        if backlevel is None:
-            # Use the new kwarg 'level'.
-            backlevel = kwargs.get('level', 1)
-        else:
-            warn(DeprecationWarning(
-                'The `back` argument will be deprecated soon.'))
+        backlevel = kwargs.get('level', 1)
+
         info = get_lineinfo(level=backlevel)
         if self.basename:
             fname = os.path.split(info.filename)[-1]
@@ -237,7 +250,12 @@ class DebugPrinter(object):
             filename=fname,
             lineno=info.lineno,
             name=func).ljust(self.ljustwidth)
-        pargs[0] = ''.join((infostr, str(pargs[0])))
+        text = str(self.transform_text(
+            kwargs.get('sep', ' ').join((str(s) for s in pargs))
+        ))
+
+        # infostr may be a Colr instance.
+        line = ''.join((str(infostr), text))
 
         # Pop all kwargs for this function. Send the rest to print().
         with suppress(KeyError):
@@ -247,7 +265,38 @@ class DebugPrinter(object):
         with suppress(KeyError):
             kwargs.pop('parent')
 
-        print(*pargs, **kwargs)
+        print(line, **kwargs)
+
+    def transform_text(self, text):
+        """ Run a transformation on the actual text before printing. """
+        # This is meaningless for DebugPrinter, and a little bit of a hack
+        # to make DebugColrPrinter work without reimplementing debug().
+        return str(text)
+
+
+class DebugColrPrinter(DebugPrinter):
+    """ A debug printer that remembers it's config on initilization,
+        and uses it until changed.
+    """
+    textcolor = 'green'
+
+    def __init__(self, fmt=None, ljustwidth=40, basename=True):
+        if default_colr_format is None:
+            imperr = ImportError(
+                'colr is not installed, you can install it with pip.'
+            )
+            imperr.name = 'colr'
+            raise imperr
+
+        super(DebugColrPrinter, self).__init__(
+            fmt=fmt or default_colr_format,
+            ljustwidth=ljustwidth,
+            basename=basename,
+        )
+
+    def transform_text(self, text):
+        """ Transform all debug text, colorizing it. """
+        return C(text, fore=self.textcolor)
 
 
 class suppress:
