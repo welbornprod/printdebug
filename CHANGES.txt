@@ -1,3 +1,4 @@
+v0.2.2 11/24/16 -- Single instances can be disabled, and opt-in exceptions when debug is disabled.
 v0.2.1 08/28/16 -- Continuations, alignment, and stderr by default.
 v0.2.0 08/28/16 -- Added DebugColrPrinter, deprecated `back`, format changes.
 v0.1.1 01/27/16 -- Small bug fixes.

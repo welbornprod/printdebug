@@ -5,7 +5,7 @@
     -Christopher Welborn 08-21-2014
 '''
 from __future__ import print_function
-from distutils.core import setup
+from setuptools import setup
 
 # Convert github markdown to Pypi rst.
 defaultdesc = 'Small debug printing module.'
@@ -29,7 +29,7 @@ else:
 
 setup(
     name='PrintDebug',
-    version='0.2.1',
+    version='0.2.2',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['printdebug'],
@@ -47,4 +47,7 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
+    extras_require={
+        'colr': 'colr>=0.5.1',
+    },
 )

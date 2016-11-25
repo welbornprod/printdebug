@@ -3,18 +3,35 @@
     ...Just a small test implementation for printdebug.
     -Christopher Welborn 08-21-2014
 """
+from __future__ import print_function
 import sys
-import printdebug as pd
-from printdebug import __version__, get_lineinfo, debug
 
+from .tools import (
+    __version__,
+    get_lineinfo,
+    debug,
+    debug_enable,
+    DebugColrPrinter,
+    DebugPrinter,
+)
+
+if sys.version_info.major < 3:
+    print('Color printing is not available in Python 2.\n\n', file=sys.stderr)
+    DebugColrPrinter = DebugPrinter
+
+# TODO: Use actual unit tests! The new StdOutCatcher/StdErrCatcher can be used
+#       to capture output.
+#       This has gone too far, now that there is more than a single debug()
+#       function.
 
 def main():
-    pd.debug('Hello from main().')
+    debug('Hello from main().')
     debug('The old functions still work.')
     return run_tests(
         another_func_test,
         debugprinter_test,
         disable_test,
+        disable_instance_test,
         lineinfo_str_test,
         color_format_test,
         level_test,
@@ -27,13 +44,14 @@ def align_test():
     """ debug(align=True) should align content without the lineinfo. """
     debug('Next line will be aligned with this one.')
     debug('...so is it?', align=True)
-    dp = pd.DebugPrinter()
+    dp = DebugPrinter()
     dp.debug('DebugPrinter, next line will be aligned.')
     dp.debug('...is it aligned?', align=True)
 
     try:
-        cp = pd.DebugColrPrinter()
-    except ImportError:
+        cp = DebugColrPrinter()
+    except ImportError as ex:
+        print(ex, file=sys.stderr)
         return 0
     cp.debug('DebugColrPrinter, next line will be aligned.')
     cp.debug('...was it aligned?', align=True)
@@ -44,11 +62,11 @@ def another_func_test():
     """ Function names are reported correctly, even when nested in another.
     """
     def a_nested_func_test():
-        pd.debug('Hello from a nested function.')
-        pd.debug('Should show from another_func_test.', level=2)
+        debug('Hello from a nested function.')
+        debug('Should show from another_func_test.', level=2)
         return 0
 
-    pd.debug(
+    debug(
         'Testing format from another_func_test.',
         fmt='{name}, #{lineno} in {filename}: ')
     return 0 + a_nested_func_test()
@@ -57,7 +75,7 @@ def another_func_test():
 def color_format_test():
     """ Try using the fmt argument to add colors using the colr module. """
     try:
-        cp = pd.DebugColrPrinter(basename=True)
+        cp = DebugColrPrinter(basename=True)
     except ImportError as ex:
         print(
             'Unable to test color formatting, no colr module:\n{}'.format(ex)
@@ -80,13 +98,13 @@ def continued_test():
     debug(', and continuing on stdout.', file=sys.stdout)
     debug('A separate stderr line.')
     debug('A separate stdout line.', file=sys.stdout)
-    dp = pd.DebugPrinter()
+    dp = DebugPrinter()
     dp.debug('DebugPrinter, starting on stderr', end='')
     dp.debug('DebugPrinter, starting on stdout', end='', file=sys.stdout)
     dp.debug(', and continuing.')
     dp.debug(', and continuing.', file=sys.stdout)
     try:
-        cp = pd.DebugColrPrinter()
+        cp = DebugColrPrinter()
     except ImportError:
         return 0
     cp.debug('DebugColrPrinter, starting on stderr', end='')
@@ -99,7 +117,7 @@ def continued_test():
 
 def debugprinter_test():
     """ Debug printer uses it's config to format the line info. """
-    dp = pd.DebugPrinter(
+    dp = DebugPrinter(
         fmt='{filename}.{lineno}>{name}: ',
         ljustwidth=60,
         basename=False)
@@ -111,26 +129,40 @@ def disable_test():
     """ debug_enable(False) should silence output from debug() and
         DebugPrinter.debug().
     """
-    pd.debug('Disabling pd.debug.')
-    pd.debug_enable(False)
+    debug('Disabling debug.')
+    debug_enable(False)
     for i in range(5):
-        pd.debug('{} If you can read this something is wrong.'.format(
+        debug('{} If you can read this something is wrong.'.format(
             i))
-    pd.DebugPrinter().debug('DebugPrinter should not print this.')
-    pd.debug_enable()
-    pd.debug('Debug re-enabled.')
+    DebugPrinter().debug('DebugPrinter should not print this.')
+    debug_enable()
+    debug('Debug re-enabled.')
+    return 0
+
+
+def disable_instance_test():
+    """ debugprinter.disable() should disable a single instance, while leaving
+        the others untouched.
+    """
+    dp, dp2 = DebugColrPrinter(), DebugColrPrinter()
+    dp.debug('Disabling this instance.')
+    dp.disable()
+    dp2.debug('The first DebugPrinter was disabled.')
+    dp.debug('This should not print.')
+    dp.enable()
+    dp.debug('DebugPrinter re-enabled.')
     return 0
 
 
 def level_test():
     """ Walk backwards through the frame levels. """
     try:
-        dp = pd.DebugColrPrinter()
+        dp = DebugColrPrinter()
     except ImportError as ex:
         # If this is because colr is not installed, ignore it.
         if ex.name != 'colr':
             raise
-        dp = pd.DebugPrinter()
+        dp = DebugPrinter()
 
     def sub_function():
         def subsub_function():
@@ -147,7 +179,7 @@ def level_test():
 
 def lineinfo_str_test():
     """ get_lineinfo() returns a LineInfo, and str(LineInfo()) works. """
-    l = pd.get_lineinfo()
+    l = get_lineinfo()
     print('{} --> Testing LineInfo__str__'.format(l))
     return 0
 
@@ -156,7 +188,7 @@ def printobject_test():
     """ printobject() correctly nests dict, iterable keys/values. """
     o = {'test': {'child': {'subchild': [1, 2, 3]}, 'child2': ('a', 1, None)}}
     print('\nTesting printobject({!r}):'.format(o))
-    pd.printobject(o, indent=4)
+    printobject(o, indent=4)
     return 0
 
 
