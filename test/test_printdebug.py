@@ -23,6 +23,8 @@ from printdebug import (
 )
 
 print('Testing PrintDebug v. {}'.format(__version__), file=sys.stderr)
+
+
 class HelperTests(unittest.TestCase):
 
     def test_get_frame(self):
