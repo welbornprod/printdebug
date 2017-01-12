@@ -3,13 +3,11 @@
     -Christopher Welborn 08-21-2014
 """
 from __future__ import print_function, with_statement
-from collections import namedtuple
-from warnings import warn
+
 import inspect
 import os.path
 import sys
 
-from .catchers import StdOutCatcher, StdErrCatcher
 
 try:
     from colr import (
@@ -20,15 +18,18 @@ try:
 except ImportError:
     C = None
 
-__version__ = '0.2.2'
+__version__ = '0.3.0'
 
 __all__ = [
+    '__version__',
     'DebugColrPrinter',
     'DebugPrinter',
     'debug',
     'debug_enable',
+    'default_format',
     'enabled',
-    'printdebug',
+    'get_frame',
+    'get_lineinfo',
     'printobject',
     'LineInfo',
     'suppress',
@@ -49,6 +50,7 @@ else:
 # Better called through debug_enable(True/False)
 _enabled = True
 
+
 def debug_enable(enabled=True):
     """ Re-enable the debug function (if it was disabled).
         Disable it if enabled=False.
@@ -62,16 +64,21 @@ def enabled():
     return _enabled
 
 
-def get_lineinfo(level=0):
-    """ Gets information about the current line.
-        If level is given, we will go back some frames.
-        This is because we usually want to know where thing() was called,
-        not where get_lineinfo() was called.
+def _ensure_level(level=0):
+    """ Ensure the level argument is a non-negative integer, defaulting to 0
+        on errors.
     """
     try:
-        level = abs(level)
+        l = abs(level)
     except TypeError:
-        level = 0
+        return 0
+    return l
+
+
+def get_frame(level=0):
+    """ Gets a previous frame for inspecting or getting source code info from.
+    """
+    level = _ensure_level(level)
 
     frame = inspect.currentframe()
     # Go back some number of frames if needed.
@@ -82,11 +89,17 @@ def get_lineinfo(level=0):
         level -= 1
     if frame is None:
         raise ValueError('`level` is too large, there is no frame.')
+    return frame
 
-    return LineInfo(
-        frame.f_code.co_filename,
-        frame.f_code.co_name,
-        frame.f_lineno)
+
+def get_lineinfo(level=0):
+    """ Gets information about the current line.
+        If level is given, we will go back some frames.
+        This is because we usually want to know where thing() was called,
+        not where get_lineinfo() was called.
+    """
+    # Account for get_lineinfo() itself.
+    return LineInfo.from_frame(get_frame(level=level + 1))
 
 
 def debug(*args, **kwargs):
@@ -128,7 +141,9 @@ def debug(*args, **kwargs):
     parent = pop_or(kwargs, 'parent')
 
     # Go back more than once when given.
-    backlevel = pop_or(kwargs, 'level', 1)
+    backlevel = _ensure_level(pop_or(kwargs, 'level', 0))
+    # Account for call to debug().
+    backlevel += 1
 
     # Get format string.
     fmt = pop_or(kwargs, 'fmt', default_format)
@@ -171,11 +186,14 @@ def debug(*args, **kwargs):
     text = kwargs.get('sep', ' ').join((str(s) for s in pargs))
     line = ''.join((str(lineinfo), text))
     print(line, **kwargs)
+
+
 # This dict keeps track of whether a line is "continued", based on the last
 # `end` parameter, and it does so for each file descriptor used.
 debug.continued = {sys.stderr: False}
 # Whether debug() should raise DebugNotEnabled() when called while disabled.
 debug.should_raise = False
+
 
 def pop_or(dct, key, default=None):
     """ Like dict.get, except it pops the key afterwards. """
@@ -193,17 +211,17 @@ def printobject(obj, file=None, indent=0):
         Strings will be printed as is.
         Any other type will be printed using str() (Actually '{}'.format(obj))
         Arguments:
-            obj    : Object to print.
+            obj      : Object to print.
             file     : Open file object, defaults to sys.stdout.
-            indent : Internal use.
-                     Can be used to set initial indention though.
-                     Must be an integer. Default: 0
+            indent   : Internal use.
+                       Can be used to set initial indention though.
+                       Must be an integer. Default: 0
     """
     if file is None:
         file = sys.stdout
 
     if not hasattr(file, 'write'):
-        errfmt = 'file must have a "write" method. Got: {} ({!r})'
+        errfmt = '`file` must have a `write` method. Got: {} ({!r})'
         raise TypeError(errfmt.format(type(file), file))
 
     if isinstance(obj, dict):
@@ -279,8 +297,9 @@ class DebugPrinter(object):
         parent = kwargs.get('parent', None)
 
         # Go back more than once when given.
-        backlevel = kwargs.get('level', 1)
-
+        backlevel = _ensure_level(kwargs.get('level', 0))
+        # Account for call to debug().
+        backlevel += 1
         info = get_lineinfo(level=backlevel)
         if self.basename:
             fname = os.path.split(info.filename)[-1]
@@ -333,9 +352,31 @@ class DebugPrinter(object):
         """ Disable this instance. """
         self._enabled = not disabled
 
+    @property
+    def disabled(self):
+        """ Dynamic property to query this debug printer's enabled/disabled
+            value.
+        """
+        return not self._enabled
+
+    @disabled.setter
+    def disabled(self, value):
+        self._enabled = not bool(value)
+
     def enable(self, enabled=True):
         """ Re-enable this instance, if it was disabled. """
         self._enabled = enabled
+
+    @property
+    def enabled(self):
+        """ Dynamic property to query this debug printer's enabled/disabled
+            value.
+        """
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value):
+        self._enabled = bool(value)
 
     def lineinfo_len(self, s):
         """ Overridable, returns the length of line info.
@@ -370,7 +411,7 @@ class DebugColrPrinter(DebugPrinter):
             else:
                 errmsg = '\n'.join((
                     'The colr module is required for DebugColrPrinter.',
-                    'colr is not installed, you can install it with pip.',
+                    '`colr` is not installed, you can install it with pip.',
                 ))
             imperr = ImportError(errmsg)
             imperr.name = 'colr'
@@ -402,12 +443,37 @@ class LineInfo(object):
         self.name = name
         self.lineno = lineno
 
+    def __repr__(self):
+        return '{}({})'.format(
+            self.__class__.__name__,
+            ', '.join(
+                '{}={}'.format(k, getattr(self, k))
+                for k in ('filename', 'lineno', 'name')
+            )
+        )
+
     def __str__(self):
         return default_format.format(
             filename=self.filename,
             name=self.name,
             lineno=self.lineno
         )
+
+    @classmethod
+    def from_frame(cls, frame):
+        """ Construct a LineInfo from a frame, retrieved with `inspect`. """
+        return cls(
+            frame.f_code.co_filename,
+            frame.f_code.co_name,
+            frame.f_lineno
+        )
+
+    @classmethod
+    def from_level(cls, level=0):
+        level = _ensure_level(level)
+        # Account for call to from_level.
+        level += 1
+        return cls.from_frame(get_frame(level=level))
 
 
 class suppress:
@@ -434,5 +500,3 @@ class suppress:
         return (
             exctype is not None and issubclass(exctype, self._exceptions)
         )
-# Save an alias to the debug function for backwards compatibility,
-printdebug = debug

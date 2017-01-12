@@ -4,12 +4,15 @@
 """
 
 from .tools import (
+    __version__,
     DebugColrPrinter,
     DebugNotEnabled,
     DebugPrinter,
     debug,
     debug_enable,
-    printdebug,
+    default_format,
+    get_frame,
+    get_lineinfo,
     printobject,
     LineInfo,
     suppress,
@@ -21,13 +24,16 @@ from .catchers import (
 )
 
 __all__ = [
+    '__version__',
     # Exported tools
     'DebugColrPrinter',
     'DebugNotEnabled',
     'DebugPrinter',
     'debug',
     'debug_enable',
-    'printdebug',
+    'default_format',
+    'get_frame',
+    'get_lineinfo',
     'printobject',
     'LineInfo',
     # Exported extras
