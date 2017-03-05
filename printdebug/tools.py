@@ -18,7 +18,7 @@ try:
 except ImportError:
     C = None
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 __all__ = [
     '__version__',
@@ -26,6 +26,7 @@ __all__ = [
     'DebugPrinter',
     'debug',
     'debug_enable',
+    'default_colr_format',
     'default_format',
     'enabled',
     'get_frame',

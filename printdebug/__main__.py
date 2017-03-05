@@ -13,16 +13,13 @@ from .tools import (
     debug_enable,
     DebugColrPrinter,
     DebugPrinter,
+    printobject,
 )
 
 if sys.version_info.major < 3:
     print('Color printing is not available in Python 2.\n\n', file=sys.stderr)
-    DebugColrPrinter = DebugPrinter
+    DebugColrPrinter = DebugPrinter  # noqa
 
-# TODO: Use actual unit tests! The new StdOutCatcher/StdErrCatcher can be used
-#       to capture output.
-#       This has gone too far, now that there is more than a single debug()
-#       function.
 
 def main():
     debug('Hello from main().')
