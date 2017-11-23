@@ -7,7 +7,7 @@ from __future__ import print_function, with_statement
 import inspect
 import os.path
 import sys
-
+import traceback
 
 try:
     from colr import (
@@ -18,7 +18,7 @@ try:
 except ImportError:
     C = None
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 __all__ = [
     '__version__',
@@ -26,6 +26,7 @@ __all__ = [
     'DebugPrinter',
     'debug',
     'debug_enable',
+    'debug_exc',
     'default_colr_format',
     'default_format',
     'enabled',
@@ -196,6 +197,17 @@ debug.continued = {sys.stderr: False}
 debug.should_raise = False
 
 
+def debug_exc():
+    """ Print a traceback for the last traceback, if there is any. """
+    if _enabled:
+        # Show actual exception tracebacks.
+        ex_type, ex_value, ex_tb = sys.exc_info()
+        if any((ex_type, ex_value, ex_tb)):
+            debug(''.join(
+                traceback.format_exception(ex_type, ex_value, ex_tb)
+            ))
+
+
 def pop_or(dct, key, default=None):
     """ Like dict.get, except it pops the key afterwards. """
     val = default
@@ -348,6 +360,17 @@ class DebugPrinter(object):
             kwargs.pop('parent')
 
         print(line, **kwargs)
+
+    def debug_exc(self):
+        """ Print a traceback for the last traceback, if there is any. """
+        if not (_enabled and self._enabled):
+            return None
+        # Show actual exception tracebacks.
+        ex_type, ex_value, ex_tb = sys.exc_info()
+        if any((ex_type, ex_value, ex_tb)):
+            self.debug(''.join(
+                traceback.format_exception(ex_type, ex_value, ex_tb)
+            ))
 
     def disable(self, disabled=True):
         """ Disable this instance. """
