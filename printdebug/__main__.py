@@ -11,6 +11,9 @@ from .tools import (
     get_lineinfo,
     debug,
     debug_enable,
+    debug_exc,
+    debug_json,
+    debug_object,
     DebugColrPrinter,
     DebugPrinter,
     printobject,
@@ -34,6 +37,9 @@ def main():
         level_test,
         continued_test,
         align_test,
+        debug_exc_test,
+        debug_json_test,
+        debug_object_test,
     )
 
 
@@ -112,6 +118,33 @@ def continued_test():
     return 0
 
 
+def debug_exc_test():
+    """ Debug exc should show the correct caller. """
+    try:
+        raise FileNotFoundError('just a test')
+    except FileNotFoundError:
+        debug_exc('From function:')
+
+    try:
+        raise FileNotFoundError('just a test')
+    except FileNotFoundError:
+        DebugColrPrinter().debug_exc('From debugprinter:')
+
+
+def debug_json_test():
+    """ Debug json should show the correct caller. """
+    x = {'a': [1, 2, 3], 'b': (5, 6, 7)}
+    debug_json(x)
+    DebugColrPrinter().debug_json(x)
+
+
+def debug_object_test():
+    """ Debug object should show the correct caller. """
+    x = {'a': [1, 2, 3], 'b': (5, 6, 7)}
+    debug_object(x)
+    DebugColrPrinter().debug_object(x)
+
+
 def debugprinter_test():
     """ Debug printer uses it's config to format the line info. """
     dp = DebugPrinter(
@@ -163,12 +196,12 @@ def level_test():
 
     def sub_function():
         def subsub_function():
-            for i in range(0, 10):
+            for i in range(0, 6):
                 try:
                     info = get_lineinfo(level=i)
                 except ValueError:
                     break
-                dp.debug(''.join((' ' * (10 - i), info.name)))
+                dp.debug(''.join((' ' * (10 - i), info.name)), level=i)
         subsub_function()
     sub_function()
     return 0
@@ -194,7 +227,7 @@ def run_tests(*funcs):
     errs = 0
     for func in funcs:
         print('\nTesting with {}:'.format(func.__name__))
-        errs += func()
+        errs += func() or 0
     return errs
 
 

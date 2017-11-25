@@ -13,13 +13,21 @@ import unittest
 from printdebug import (
     __version__,
     debug,
+    debug_exc,
+    debug_json,
+    debug_object,
     default_format,
     DebugPrinter,
     DebugColrPrinter,
     get_frame,
     get_lineinfo,
+    json_str,
     LineInfo,
+    object_str,
+    print_json,
+    print_object,
     StdErrCatcher,
+    StdOutCatcher,
 )
 
 print('Testing PrintDebug v. {}'.format(__version__), file=sys.stderr)
@@ -229,6 +237,122 @@ class DebugPrinterTests(unittest.TestCase):
             'NestedTest.',
             nestederr.output,
             msg='Failed to output correct text for nested function.',
+        )
+
+
+class PrintTests(unittest.TestCase):
+    def test_json_str(self):
+        """ json_str should work with valid json. """
+        obj = {
+            'apple': [3, 1, 2],
+            'diver': ('apricot', 'banana', 'cat'),
+        }
+        obj['f'] = obj.copy()
+        obj['f']['f'] = obj['f'].copy()
+        expected = """
+{
+    "apple": [
+        3,
+        1,
+        2
+    ],
+    "diver": [
+        "apricot",
+        "banana",
+        "cat"
+    ],
+    "f": {
+        "apple": [
+            3,
+            1,
+            2
+        ],
+        "diver": [
+            "apricot",
+            "banana",
+            "cat"
+        ],
+        "f": {
+            "apple": [
+                3,
+                1,
+                2
+            ],
+            "diver": [
+                "apricot",
+                "banana",
+                "cat"
+            ]
+        }
+    }
+}
+"""
+        self.assertEqual(
+            json_str(obj).strip(),
+            expected.strip(),
+            msg='json_str output failed.'
+        )
+
+    def test_object_str(self):
+        """ print_object should print all builtin types. """
+        obj = {
+            'apple': [3, 1, 2],
+            'diver': ('apricot', 'banana', 'cat'),
+            'extra': {3.3, 1.1, 2.2},
+            'genius': b'ascii beef dead pi',
+        }
+        obj['f'] = obj.copy()
+        obj['f']['f'] = obj['f'].copy()
+        expected = """
+apple:
+    1
+    2
+    3
+diver:
+    apricot
+    banana
+    cat
+extra:
+    1.1
+    2.2
+    3.3
+f:
+    apple:
+        1
+        2
+        3
+    diver:
+        apricot
+        banana
+        cat
+    extra:
+        1.1
+        2.2
+        3.3
+    f:
+        apple:
+            1
+            2
+            3
+        diver:
+            apricot
+            banana
+            cat
+        extra:
+            1.1
+            2.2
+            3.3
+        genius:
+            b'ascii beef dead pi'
+    genius:
+        b'ascii beef dead pi'
+genius:
+    b'ascii beef dead pi'
+"""
+        self.assertEqual(
+            '\n'.join(object_str(obj)).strip(),
+            expected.strip(),
+            msg='print_object output failed.'
         )
 
 
