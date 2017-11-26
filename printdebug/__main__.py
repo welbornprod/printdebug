@@ -24,23 +24,42 @@ if sys.version_info.major < 3:
     DebugColrPrinter = DebugPrinter  # noqa
 
 
-def main():
-    debug('Hello from main().')
-    debug('The old functions still work.')
-    return run_tests(
-        another_func_test,
-        debugprinter_test,
-        disable_test,
-        disable_instance_test,
-        lineinfo_str_test,
-        color_format_test,
-        level_test,
-        continued_test,
-        align_test,
-        debug_exc_test,
-        debug_json_test,
-        debug_object_test,
-    )
+def main(nameargs):
+    if not nameargs:
+        debug('Hello from main().')
+        debug('The old functions still work.')
+        return run_tests(
+            align_test,
+            another_func_test,
+            color_format_test,
+            continued_test,
+            debug_err_test,
+            debug_exc_test,
+            debug_json_test,
+            debug_object_test,
+            debugprinter_test,
+            disable_instance_test,
+            disable_test,
+            level_test,
+            lineinfo_str_test,
+            printobject_test,
+        )
+    # Run tests by name.
+    test_funcs = []
+    globs = globals()
+    for test_name in test_names:
+        for name in nameargs:
+            if name in test_name:
+                test_funcs.append(globs[test_name])
+    if not test_funcs:
+        print(
+            '\nNo test functions found with: {}'.format(
+                ', '.join(nameargs)
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    return run_tests(*test_funcs)
 
 
 def align_test():
@@ -118,8 +137,16 @@ def continued_test():
     return 0
 
 
+def debug_err_test():
+    """ Debug_err should use the correct color. """
+    cp = DebugColrPrinter()
+    if not hasattr(cp, 'debug_err'):
+        debug('No DebugColrPrinter available.')
+    cp.debug_err('This error message should be a different color.')
+
+
 def debug_exc_test():
-    """ Debug exc should show the correct caller. """
+    """ Debug_exc should show the correct caller. """
     try:
         raise FileNotFoundError('just a test')
     except FileNotFoundError:
@@ -224,16 +251,50 @@ def printobject_test():
 
 def run_tests(*funcs):
     """ Print a header for each function, and then call it. """
+    testlen = len(funcs)
+    if testlen == len(test_names):
+        testlen = 'all'
+    print('\nRunning {} test {}...'.format(
+        testlen,
+        'function' if testlen == 1 else 'functions',
+    ))
     errs = 0
     for func in funcs:
         print('\nTesting with {}:'.format(func.__name__))
         errs += func() or 0
+
+    print('\nFinished running {} test {}. (errors: {})'.format(
+        testlen,
+        'function' if testlen == 1 else 'functions',
+        errs,
+    ))
     return errs
 
 
+test_names = sorted(s for s in dir() if s.endswith('_test'))
+
+
 if __name__ == '__main__':
+    if ('-h' in sys.argv) or ('--help' in sys.argv):
+        print("""
+    Usage: printdebug [TEST_NAME]
+           printdebug [-l]
+
+    Options:
+        TEST_NAME  : Text/Regex pattern for test functions to run.
+        -h,--help  : Show this message and exit.
+        -l,--list  : Show test function names and exit.
+        -v,--version  : Show printdebug version and exit.
+        """)
+        sys.exit(0)
     if ('-v' in sys.argv) or ('--version' in sys.argv):
         print('printdebug v. {}'.format(__version__))
         sys.exit(0)
+    if ('-l' in sys.argv) or ('--list' in sys.argv):
+        print('Test functions: ({})\n    {}'.format(
+            len(test_names),
+            '\n    '.join(test_names)
+        ))
+        sys.exit(0)
 
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

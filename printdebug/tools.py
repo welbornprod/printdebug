@@ -507,7 +507,7 @@ class DebugPrinter(object):
             kwargs['file'] = self.file
 
         # Include parent class name when given.
-        parent = kwargs.get('parent', None)
+        parent = pop_or(kwargs, 'parent', None)
 
         # Go back more than once when given.
         backlevel = _ensure_level(pop_or(kwargs, 'level', 0))
@@ -530,8 +530,11 @@ class DebugPrinter(object):
             filename=fname,
             lineno=info.lineno,
             name=func).ljust(self.ljustwidth)
-        text = str(self.transform_text(
-            kwargs.get('sep', ' ').join((str(s) for s in pargs))
+        # Run any transformations that child classes may have, or
+        # any transformation functions that were passed in.
+        transfunc = pop_or(kwargs, 'transform', self.transform_text)
+        text = str(transfunc(
+            kwargs.get('sep', ' ').join((str(s) for s in pargs)),
         ))
 
         align = pop_or(kwargs, 'align', False)
@@ -550,14 +553,6 @@ class DebugPrinter(object):
 
         # lineinfo may be a Colr instance.
         line = ''.join((str(lineinfo), text))
-
-        # Pop all kwargs for this function. Send the rest to print().
-        with suppress(KeyError):
-            kwargs.pop('back')
-        with suppress(KeyError):
-            kwargs.pop('level')
-        with suppress(KeyError):
-            kwargs.pop('parent')
 
         print(line, **kwargs)
 
@@ -667,8 +662,10 @@ class DebugPrinter(object):
 
     def transform_text(self, text):
         """ Run a transformation on the actual text before printing. """
-        # This is meaningless for DebugPrinter, and a little bit of a hack
-        # to make DebugColrPrinter work without reimplementing debug().
+        # This is meaningless for DebugPrinter. Derived classes may need
+        # to transform the message text before printing.
+        # This can be done by overriding 'self.transform_text', or passing
+        # a `transform=my_function` to debug.
         return str(text)
 
 
@@ -677,6 +674,7 @@ class DebugColrPrinter(DebugPrinter):
         and uses it until changed.
     """
     textcolor = 'green'
+    errorcolor = 'red'
 
     def __init__(
             self, fmt=None, ljustwidth=40, basename=True, file=None,
@@ -706,15 +704,27 @@ class DebugColrPrinter(DebugPrinter):
             should_raise=should_raise,
         )
 
+    def debug_err(self, *args, **kwargs):
+        """ Like `debug`, except the messages are colored by self.errorcolor
+            or a `fore` argument.
+        """
+        kwargs['transform'] = self.transform_err
+        kwargs['level'] = kwargs.get('level', 0) + 1
+        return self.debug(*args, **kwargs)
+
     def lineinfo_len(self, s):
         """ Return a line length, without escape codes. """
         if hasattr(s, 'stripped'):
             return len(s.stripped())
         return len(s)
 
+    def transform_err(self, text):
+        """ Transform all debug error text, colorizing it. """
+        return C(text, self.errorcolor)
+
     def transform_text(self, text):
         """ Transform all debug text, colorizing it. """
-        return C(text, fore=self.textcolor)
+        return C(text, self.textcolor)
 
 
 class LineInfo(object):
