@@ -1,3 +1,4 @@
+v0.3.4 11/25/17 -- Add `debug_err` for `DebugColrPrinter`.
 v0.3.3 11/24/17 -- print/debug_object, print/debug_json, and debug_exc caller info was fixed.
 v0.3.2 11/22/17 -- Add \`debug_exc\`, for traceback printing in debug.
 v0.3.0 01/11/17 -- Providing get_frame and get_lineinfo, disabled/enabled properties, and more tests.
