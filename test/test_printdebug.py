@@ -14,8 +14,6 @@ from printdebug import (
     __version__,
     debug,
     debug_exc,
-    debug_json,
-    debug_object,
     default_format,
     DebugPrinter,
     DebugColrPrinter,
@@ -24,10 +22,7 @@ from printdebug import (
     json_str,
     LineInfo,
     object_str,
-    print_json,
-    print_object,
     StdErrCatcher,
-    StdOutCatcher,
 )
 
 print('Testing PrintDebug v. {}'.format(__version__), file=sys.stderr)
@@ -111,6 +106,7 @@ class LineInfoTests(unittest.TestCase):
 
 class DebugTests(unittest.TestCase):
     """ Tests for the module-level `debug` function. """
+
     def test_debug_funcname(self):
         """ debug outputs the correct function name. """
         with StdErrCatcher() as err:
@@ -147,10 +143,14 @@ class DebugTests(unittest.TestCase):
 
 
 class DebugPrinterTests(unittest.TestCase):
-    """ Tests for the module-level `debug` function. """
-    def test_DebugPrinter_disable(self):
+    """ Tests for the DebugPrinter class. """
+    def setUp(self):
+        self.dp_class = DebugPrinter
+        self.class_name = self.dp_class.__name__
+
+    def test_disable(self):
         """ DebugPrinter._enabled is set by all the properties/methods. """
-        dp = DebugPrinter(fmt=default_format)
+        dp = self.dp_class(fmt=default_format)
         dp.disabled = False
         with StdErrCatcher() as err:
             dp.debug('Test.', file=sys.stderr)
@@ -205,13 +205,13 @@ class DebugPrinterTests(unittest.TestCase):
             msg='Failed to disable debugprinter with disable().'
         )
 
-    def test_DebugPrinter_funcname(self):
+    def test_funcname(self):
         """ debug outputs the correct function name. """
-        dp = DebugPrinter(fmt=default_format)
+        dp = self.dp_class(fmt=default_format)
         with StdErrCatcher() as err:
             dp.debug('Test.', file=sys.stderr)
         self.assertIn(
-            'test_DebugPrinter_funcname',
+            'test_funcname',
             err.output,
             msg='Failed to output correct function name.',
         )
@@ -222,7 +222,7 @@ class DebugPrinterTests(unittest.TestCase):
         )
 
         def nested_function():
-            dp = DebugPrinter()
+            dp = self.dp_class(fmt=default_format)
             dp.debug('NestedTest.', file=sys.stderr)
 
         with StdErrCatcher() as nestederr:
@@ -238,6 +238,41 @@ class DebugPrinterTests(unittest.TestCase):
             nestederr.output,
             msg='Failed to output correct text for nested function.',
         )
+
+    def test_debug_transform(self):
+        """ debug_err uses transform_err. """
+        def transform(text):
+            return text.upper()
+
+        dp = self.dp_class(fmt=default_format)
+        with StdErrCatcher() as err:
+            dp.debug('testing this', transform=transform, file=sys.stderr)
+        self.assertIn(
+            'TESTING THIS',
+            err.output,
+            msg='Failed to use transform_err function.',
+        )
+
+    def test_debug_err_transform(self):
+        """ debug_err uses transform_err. """
+        def transform(text):
+            return text.upper()
+
+        dp = self.dp_class(fmt=default_format)
+        with StdErrCatcher() as err:
+            dp.debug_err('testing this', transform=transform, file=sys.stderr)
+        self.assertIn(
+            'TESTING THIS',
+            err.output,
+            msg='Failed to use transform_err function.',
+        )
+
+
+class DebugColrPrinterTests(DebugPrinterTests):
+    """ Tests for the DebugColrPrinter class. """
+    def setUp(self):
+        self.dp_class = DebugColrPrinter
+        self.class_name = self.dp_class.__name__
 
 
 class PrintTests(unittest.TestCase):

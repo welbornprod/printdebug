@@ -557,8 +557,8 @@ class DebugPrinter(object):
         print(line, **kwargs)
 
     def debug_err(self, *args, **kwargs):
-        """ Like `debug`, except the messages are colored by self.errorcolor
-            or a `fore` argument.
+        """ Like `debug`, except the messages are passed through
+            `self.transform_err` before printing.
         """
         kwargs['transform'] = kwargs.get('transform', self.transform_err)
         kwargs['level'] = kwargs.get('level', 0) + 1
@@ -668,6 +668,16 @@ class DebugPrinter(object):
         """
         return len(s)
 
+    def transform_err(self, text):
+        """ Run a transformation on the actual text before printing,
+            specifically for `debug_err`.
+        """
+        # This is meaningless for DebugPrinter. Derived classes may need
+        # to transform the message text before printing.
+        # This can be done by overriding 'self.transform_err', or passing
+        # a `transform=my_function` to debug_err.
+        return str(text)
+
     def transform_text(self, text):
         """ Run a transformation on the actual text before printing. """
         # This is meaningless for DebugPrinter. Derived classes may need
@@ -711,14 +721,6 @@ class DebugColrPrinter(DebugPrinter):
             file=file,
             should_raise=should_raise,
         )
-
-    def debug_err(self, *args, **kwargs):
-        """ Like `debug`, except the messages are colored by self.errorcolor
-            or a `fore` argument.
-        """
-        kwargs['transform'] = kwargs.get('transform', self.transform_err)
-        kwargs['level'] = kwargs.get('level', 0) + 1
-        return self.debug(*args, **kwargs)
 
     def lineinfo_len(self, s):
         """ Return a line length, without escape codes. """
