@@ -1,3 +1,4 @@
+v0.3.5 01/21/19 -- Add debug_err() to DebugPrinter, refactored and tests added.
 v0.3.4 11/25/17 -- Add `debug_err` for `DebugColrPrinter`.
 v0.3.3 11/24/17 -- print/debug_object, print/debug_json, and debug_exc caller info was fixed.
 v0.3.2 11/22/17 -- Add \`debug_exc\`, for traceback printing in debug.

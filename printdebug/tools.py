@@ -20,7 +20,7 @@ try:
 except ImportError:
     C = None
 
-__version__ = '0.3.4'
+__version__ = '0.3.5'
 
 __all__ = [
     '__version__',

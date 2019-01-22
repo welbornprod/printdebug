@@ -29,7 +29,7 @@ else:
 
 setup(
     name='PrintDebug',
-    version='0.3.4',
+    version='0.3.5',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['printdebug'],
