@@ -556,6 +556,14 @@ class DebugPrinter(object):
 
         print(line, **kwargs)
 
+    def debug_err(self, *args, **kwargs):
+        """ Like `debug`, except the messages are colored by self.errorcolor
+            or a `fore` argument.
+        """
+        kwargs['transform'] = kwargs.get('transform', self.transform_err)
+        kwargs['level'] = kwargs.get('level', 0) + 1
+        return self.debug(*args, **kwargs)
+
     def debug_exc(self, msg=None, suppress=None, suppress_strs=None):
         """ Print a formatted traceback for the last exception, if there is
             any.
@@ -708,7 +716,7 @@ class DebugColrPrinter(DebugPrinter):
         """ Like `debug`, except the messages are colored by self.errorcolor
             or a `fore` argument.
         """
-        kwargs['transform'] = self.transform_err
+        kwargs['transform'] = kwargs.get('transform', self.transform_err)
         kwargs['level'] = kwargs.get('level', 0) + 1
         return self.debug(*args, **kwargs)
 
